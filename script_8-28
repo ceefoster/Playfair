@@ -1,0 +1,140 @@
+
+
+//)*******************************************************************************//
+var margin = {top: 100, right: 100, bottom: 100, left: 100},
+	width = 960 - margin.left - margin.right,
+	height = 500 - margin.top - margin.bottom;
+
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+  .append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//global variable for Playfair's data table
+var dataset;
+
+d3.csv("playfair_nums.csv", function(error, data){
+	if (error) throw error;
+
+	//******************************this section was above the d3.csv but might need to be in here for scales**************************************//
+
+
+	//scales
+	//"D3's time scale is an extension of d3.scale.linear that uses JavaScript Date objects as the domain representation. 
+	//Thus, unlike the normal linear scale, domain values are coerced to dates rather than numbers;"
+	//https://github.com/mbostock/d3/wiki/Time-Scales 
+	var x = d3.scale.linear()
+		.range([0, width]);
+
+	var y = d3.scale.linear()
+		.range([height, 0]);
+
+	// var y2 = d3.scale.linear()
+	// 	.range([height, 0]);
+
+	//axes
+	var xAxis = d3.svg.axis()
+		.scale(x)
+		.innerTickSize([0])
+		.orient("bottom");
+
+	var yAxis = d3.svg.axis()
+		.scale(y)
+		.innerTickSize([0])
+		.orient("right"); //orients the text, not the line 
+
+	var line = d3.svg.line()
+		.x(function(d) {return x(d.Years); })
+		.y(function(d) {return y(d.Imports); });
+
+	var line2 = d3.svg.line()
+		.x(function(d) {return x(d.Years); })
+		.y(function(d) {return y(d.Exports); });
+
+
+	//*******************************************************************************//
+
+
+
+	data.forEach(function(d){
+		// d.Years = parseDate(d.Years); //caused a "Error: Invalid value for <path> attribute"
+		d.Imports= +d.Imports; 
+		d.Exports= +d.Exports;
+	});
+
+	//calculate values to determine y domain
+	var maxImport = d3.max(data, function(d) {return d.Imports} );
+	var maxExport = d3.max(data, function(d) {return d.Exports} );
+	var minImport = d3.min(data, function(d) {return d.Imports} );
+	var minExport = d3.min(data, function(d) {return d.Exports} );
+
+	//extent is the equivalent of calling min and max simultaneously 
+	x.domain(d3.extent(data, function(d) { return d.Years;}));
+	//pick y domain based on smallest and largest numbers of combined import and export numbers 
+	y.domain([Math.min(minImport, minExport), Math.max(maxImport, maxExport)]);
+
+
+	// //hand data off to global variable
+	// dataset = data;
+
+	// console.log(data);
+
+	svg.append("g")
+		// .attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")") //orients x-axis to bottom of chart (default is top)
+		.attr("class", "axis")
+		.call(xAxis);
+
+	svg.append("g")
+		// .attr("class", "y axis")
+		.attr("transform", "translate(" + width + ",0)") //orients y-axis to right of chart (default is left)
+		.attr("class", "axis")
+		.call(yAxis);
+
+	svg.append("path")
+		.datum(data)
+		.attr("class", "line")
+		.attr("d", line);
+
+	svg.append("path")
+		.datum(data)
+		.attr("class", "line exports")
+		.attr("d", line2);
+
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

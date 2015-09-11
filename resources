@@ -1,0 +1,42 @@
+
+Difference Chart - Bostock
+**graph and code example
+http://bl.ocks.org/mbostock/3894205 
+
+
+Difference Chart - d3noob
+**graph, code, explanation example
+http://www.d3noob.org/2015/07/difference-charts-with-d3js-science-vs.html
+
+
+Filling an area under the graph - d3noob
+**graph, code, explanation example
+http://www.d3noob.org/2013/01/filling-area-under-graph.html
+
+
+Adding axis labels to a graph  - d3noob
+**graph, code, explanation example
+http://www.d3noob.org/2012/12/adding-axis-labels-to-d3js-graph.html
+
+
+Line chart with grid - Hunzy
+**graph and code example
+http://bl.ocks.org/hunzy/11110940
+
+
+Formatting
+**API
+https://github.com/mbostock/d3/wiki/Time-Formatting
+https://github.com/mbostock/d3/wiki/Formatting#d3_format
+
+
+CSS double border with unique styling
+**stackoverflow
+http://stackoverflow.com/questions/19463904/css-double-border-with-different-color?lq=1
+
+
+@font-face
+**tutorial/info
+what: allows custom fonts to be loaded onto webpage 
+https://css-tricks.com/snippets/css/using-font-face/
+
