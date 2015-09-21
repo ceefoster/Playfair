@@ -73,16 +73,19 @@ body {
   display: none;
 }
 
-.area.above { fill: #ABAF7B;s } /*green fill*/
+.area.above { fill: #ABAF7B; } /*green fill*/
 .area.below { fill: #E4AE95; } /*pink fill*/
 .line {
-  fill: none;
+/*  fill: none;
+*/
   stroke: #D6BF24; /*yellow line*/
   stroke-width: 5px;
 }
 
 .exports{
 	stroke: #BB877F; /*pink line*/
+	stroke-width: 5px; /*added after doing undefined work*/
+
 }
 
 .tick line{
@@ -95,6 +98,21 @@ body {
 	stroke-width: 10px;
 }
 
+.area-undefined{
+  fill:gray;
+/*  stroke:black;
+  stroke-width: .5px;*/
+}
+
+/*from undefined line example*/
+/*.area {
+    fill: gray;
+    stroke: none;
+}*/
+.line-undefined {
+    stroke-dasharray: 3px 3px;
+}
+/**/
 
 .titleText{
 	font-size: x-large;

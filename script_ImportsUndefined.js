@@ -26,7 +26,6 @@ var svg = d3.select("body").append("svg")
 
 var interval = 200000;
 
-//obtain data to make imports dashed line for undefined data 
 var findCriticalPairs = function(data) {
     // Store property `critical` on points before and after a series of points.
     var inUndefinedSeries = false;
@@ -53,6 +52,7 @@ var findCriticalPairs = function(data) {
         // Coerce numbers
         e.Years = +e.Years;
         e.Imports = +e.Imports;
+        e.Exports = +e.Exports;
     });
 
     // These pairs will be used to generate sections of undefined values
@@ -63,44 +63,6 @@ var findCriticalPairs = function(data) {
     }
     return criticalPairs;
 };
-
-//obtain data to make exports dashed line for undefined data 
-// var findCriticalPairs2 = function(data) {
-//     // Store property `critical` on points before and after a series of points.
-//     var inUndefinedSeries = false;
-//     var criticalValues = [];
-//     var criticalPairs = [];
-
-//     _.each(data, function(e, i) {
-//         if (!e.Exports) {
-//             // If this is the first item in an undefined series, add the previous
-//             // item to the critical values array.
-//             if (!inUndefinedSeries) {
-//                 inUndefinedSeries = true;
-//                 data[i - 1].critical = true;
-//                 criticalValues.push(data[i - 1]);
-//             }
-//         } else if (inUndefinedSeries) {
-//             // When we reach the end of an undefined series, add the current item
-//             // to the critical values array.
-//             inUndefinedSeries = false;
-//             data[i].critical = true;
-//             criticalValues.push(data[i]);
-//         }
-
-//         // Coerce numbers
-//         e.Years = +e.Years;
-//         e.Exports = +e.Exports;
-//     });
-
-//     // These pairs will be used to generate sections of undefined values
-//     for (var i = 0; i < criticalValues.length; i++) {
-//         if (criticalValues[i].critical && i % 2 === 0) {
-//             criticalPairs.push([criticalValues[i], criticalValues[i + 1]]);
-//         }
-//     }
-//     return criticalPairs;
-// };
 
 
 
@@ -198,53 +160,49 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 
 	//line & line2 are area svg for the difference graph (ow would be line svg)
 
-	/****LINE AND AREA FOR DEFINED DATA****/
-
 	//imports line - yellow
 	var line = d3.svg.area()
 		.interpolate("basis") //makes the line curvy
-		.defined(function(d) { return d.Imports; }) //limits this line to defined data
+		.defined(function(d) { return d.Imports; }) //marks defined data on line 
 		.x(function(d) {return x(d.Years); })
 		.y(function(d) {return y(d.Imports); });
 
 	//exports line - pink
 	var line2 = d3.svg.area()
 		.interpolate("basis") //makes the line curvy 
-		.defined(function(d) { return d.Exports; }) //limits this line to defined data 
-		.x(function(d) {return x(d.Years); }) 
+		.x(function(d) {return x(d.Years); })
 		.y(function(d) {return y(d.Exports); });
 
 	var area = d3.svg.area()
 		.interpolate("basis") //makes the line curvy
-		.defined(function(d) { return d.Imports; }) //limits this area to defined area 
 		.x(function(d) { return x(d.Years)})
 		.y1(function(d) { return y(d.Imports)}); //y1 makes the Imports line the baseline
 
 
-	/****//**END LINE AND AREA FOR DEFINED DATA****/
+		//FROM UNDEFINED DATA EXAMPLE: 
+
+    // var line = d3.svg.line()
+    //     .defined(function(d) { return d.wineries; })
+    //     .x(function(d) { return x(+d.year); })
+    //     .y(function(d) { return y(+d.wineries); });
+
+    // var area = d3.svg.area()
+    //     .defined(function(d) { return d.wineries; })
+    //     .x(function(d) { return x(+d.year); })
+    //     .y0(function(d) { return y(+d.wineries); })
+    //     .y1(height);
 
 
-	/****LINE AND AREA FOR UNDEFINED DATA****/
-
-	//imports line - dashed yellow
     var lineUndefined = d3.svg.line()
-    	.interpolate("basis") //makes the line curvy
-        .defined(function(d) { console.log(d.critical); return d.critical; }) //returns the data to make the undefined, dashed line
-        .x(function(d) { return x(d.Years); })
-        .y(function(d) { return y(d.Imports); });
-
-    //exports line - dashed pink
-    var lineUndefined2 = d3.svg.line()
-    	.interpolate("basis") //makes the line curvy
         .defined(function(d) { return d.critical; })
-        .x(function(d) { return x(d.Years); })
-        .y(function(d) { return y(d.Exports); });
+        .x(function(d) { return x(+d.Years); })
+        .y(function(d) { return y(+d.Imports); });
 
-	 var areaUndefined = d3.svg.area()
-	 	.interpolate("basis") //makes the line curvy
-        .defined(function(d) { return d.critical; }) //returns the critical data to limit to undefined area 
-        .x(function(d) { return x(d.Years); }) //years are only the critical years
-        .y1(function(d) {return y(d.Imports)}); //y1 makes the Imports line the baseline, these imports are only the critical point imports
+	 // var areaUndefined = d3.svg.area()
+  //       .defined(function(d) { return d.critical; })
+  //       .x(function(d) { return x(+d.Years); })
+  //       .y0(function(d) { return y(+d.Imports); })
+  //       .y1(height);
 
 
 	/*************************append all of the graphics to the canvas**************************************/
@@ -260,7 +218,7 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 		.attr("fill","white")
 		.attr("opacity", .2);
 
-	/**DIFFERENCE GRAPH - defined data**/
+	/**DIFFERENCE GRAPH**/
 
 	//clip path area above imports line
 	svg.append("clipPath")
@@ -285,58 +243,6 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 		.attr("d", area.y0(function(d) { return y(d.Exports); }));
 
 	/**END DIFFERENCE GRAPH**/
-
-
-
-  	//imports
-    var criticalPairs = findCriticalPairs(data);
-    _.each(criticalPairs, function(e) {
-		//clip path area above imports line
-		svg.append("clipPath")
-			.attr("id", "clip-above")
-		  .append("path")
-		  	.attr("d", areaUndefined.y0(0));
-
-		//area below the imports line
-		svg.append("clipPath")
-			.attr("id", "clip-below")
-		  .append("path")
-		  	.attr("d", areaUndefined.y0(height));
-
-		//shape that represents area between the two lines ... fills where the two intersect 
-		svg.append("path")
-			// .attr("class", "area above")
-			.classed("area above", true)
-			.attr("clip-path", "url(#clip-above)")
-			.attr("d", areaUndefined.y0(function(d) { return y(d.Exports); }));
-        	// .attr("class", "area area-undefined") //or "area above"
-         //    .attr("d", areaUndefined(e));
-
-        //same for the area below
-		svg.append("path")
-			// .attr("class", "area below")
-			.classed("area below", true)
-			.attr("clip-path", "url(#clip-below)")
-			.attr("d", areaUndefined.y0(function(d) { return y(d.Exports); }));
-        	// .attr("class", "area area-undefined") //or "area above"
-	        // .attr("d", areaUndefined(e));
-
-	    //actually fills in the difference chart
-        svg.append("path")
-        	.attr("class", "area area-undefined") //or "area above"
-            .attr("d", areaUndefined(e)); //area(e) does the same thing
-
-        //dash undefined line for imports
-        svg.append("path")
-            .attr("class", "line line-undefined")
-            .attr("d", lineUndefined(e)); //line(e) does NOT do the same thing
-
-        //dash undefined line for exports 
-        svg.append("path")
-            .attr("class", "exports line-undefined")
-            .attr("d", lineUndefined2(e));
-    });
-	console.log(criticalPairs);
 
 	//line imports
 	svg.append("path")
@@ -405,16 +311,16 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 	  	.attr("stroke-width", 2);
  	
 //)******************************************CREATE GRAPH LABEL - borrowed from former student*******//
-var ellipseX=((width*3)/10);
+var ellipseX=(width/3)*2;
 	var ellipseY=150;
-	var textX=((width*2)/15);
+	var textX=(width/2);
 	var textY=110;
 	//add Label
 	svg.append("ellipse")
 			.attr("id", "currValue")
 			.attr("cx", ellipseX)
 			.attr("cy", ellipseY)
-			.attr("rx",150)
+			.attr("rx", 150)
 			.attr("ry",105)
 			.attr("fill", "#FCE2B0")
 			.attr("stroke", "black")
@@ -450,22 +356,48 @@ var ellipseX=((width*3)/10);
 			.text("NORTH AMERICA");
 
 
-	// add line labels
+	//add line labels
 	svg.append("text")
-		.attr("transform", "translate(" + (width-320) + "," + (height-250) + ") rotate(" + (-75) + ")")
+		.attr("transform", "translate(" + (width-690) + "," + (height-425) + ") rotate(" + (55) + ")")
 		.attr("dy", ".35em")
 		.attr("text-anchor","start")
 		.style("fill", "black")
 		.text("Line of Exports");
 	svg.append("text")
-		.attr("transform", "translate(" + (width-690) + "," + (height-55) + ") rotate(" + (-11) + ")")
+		.attr("transform", "translate(" + (width-690) + "," + (height-130) + ")")
 		.attr("dy", ".35em")
 		.attr("text-anchor","start")
 		.style("fill", "black")
 		.text("Line of Imports");
 
+  //   var lineUndefined = d3.svg.line()
+  //       .defined(function(d) { return d.critical; })
+  //       .x(function(d) { return x(+d.Years); })
+  //       .y(function(d) { return y(+d.Imports); });
+
+
+	 // var areaUndefined = d3.svg.area()
+  //       .defined(function(d) { return d.critical; })
+  //       .x(function(d) { return x(+d.Years); })
+  //       .y0(function(d) { return y(+d.Imports); })
+  //       .y1(height);
+
+
+    var criticalPairs = findCriticalPairs(data);
+    _.each(criticalPairs, function(e) {
+        // svg.append("path")
+        //     .attr("class", "area area-undefined")
+        //     .attr("d", areaUndefined(e));
+        
+        svg.append("path")
+            .attr("class", "line line-undefined")
+            .attr("d", lineUndefined(e));
+    });
+
 
 });
+
+
 
 
 
