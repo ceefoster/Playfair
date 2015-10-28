@@ -1,22 +1,24 @@
-
-
-
-
 var margin = {top: 50, right: 100, bottom: 50, left: 50},
-	width = 960 - margin.left - margin.right,
-	height = 600 - margin.top - margin.bottom;
+	width = 1200 - margin.left - margin.right, 
+	height = 700 - margin.top - margin.bottom; 
 
 
-//scales
-//"D3's time scale is an extension of d3.scale.linear that uses JavaScript Date objects as the domain representation. 
-//Thus, unlike the normal linear scale, domain values are coerced to dates rather than numbers;"
-//https://github.com/mbostock/d3/wiki/Time-Scales
-var x = d3.time.scale()
+//scales, set range here, domain later w/ data 
+
+//scale for x axis data 
+var x = d3.time.scale() 
 	.range([0, width]);
+
+//scale for axis labels 
+var xLabel = d3.time.scale()
+	.range([0, width]); 
 
 var y = d3.scale.linear()
 	.range([height, 0]);
 
+
+
+//add the canvas/drawable piece to html body 
 var svg = d3.select("body").append("svg")
 	.attr("class", "chart")
 	.attr("width", width + margin.left + margin.right)
@@ -24,9 +26,48 @@ var svg = d3.select("body").append("svg")
   .append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+
+//define interval for y-axis values 
 var interval = 200000;
 
-//obtain data to make imports dashed line for undefined data 
+//not ideal solution but was quickest/easiest 
+var customYear; 
+var customTimeFormat = function(d){
+	if(d.getYear() == -200){
+		// d3.time.format("%y");
+		customYear = "1700";
+		// return "1700";
+	}else if(d.getYear() == -100){
+		customYear = "1800";
+		// return "1800";
+	}else if(d.getYear() == -110){
+		customYear = "90";
+	}else if(d.getYear() == -120){
+		customYear = "80";
+	}else if(d.getYear() == -130){
+		customYear = "70";
+	}else if(d.getYear() == -140){
+		customYear = "60";
+	}else if(d.getYear() == -150){
+		customYear = "50";
+	}else if(d.getYear() == -160){
+		customYear = "40";
+	}else if(d.getYear() == -170){
+		customYear = "30";
+	}else if(d.getYear() == -180){
+		customYear = "20";
+	}else if(d.getYear() == -190){
+		customYear = "10";
+	}
+	else{
+		customYear = "error";
+	}
+	return customYear;
+}
+
+
+//use data to make dashed lines for the undefined data, 
+//from Kevin Schaul: http://kevin.schaul.io/2013/07/06/undefined-data-in-d3-charts/
 var findCriticalPairs = function(data) {
     // Store property `critical` on points before and after a series of points.
     var inUndefinedSeries = false;
@@ -53,6 +94,7 @@ var findCriticalPairs = function(data) {
         // Coerce numbers
         e.Years = +e.Years;
         e.Imports = +e.Imports;
+        e.Exports =+ e.Exports;
     });
 
     // These pairs will be used to generate sections of undefined values
@@ -64,53 +106,18 @@ var findCriticalPairs = function(data) {
     return criticalPairs;
 };
 
-//obtain data to make exports dashed line for undefined data 
-// var findCriticalPairs2 = function(data) {
-//     // Store property `critical` on points before and after a series of points.
-//     var inUndefinedSeries = false;
-//     var criticalValues = [];
-//     var criticalPairs = [];
-
-//     _.each(data, function(e, i) {
-//         if (!e.Exports) {
-//             // If this is the first item in an undefined series, add the previous
-//             // item to the critical values array.
-//             if (!inUndefinedSeries) {
-//                 inUndefinedSeries = true;
-//                 data[i - 1].critical = true;
-//                 criticalValues.push(data[i - 1]);
-//             }
-//         } else if (inUndefinedSeries) {
-//             // When we reach the end of an undefined series, add the current item
-//             // to the critical values array.
-//             inUndefinedSeries = false;
-//             data[i].critical = true;
-//             criticalValues.push(data[i]);
-//         }
-
-//         // Coerce numbers
-//         e.Years = +e.Years;
-//         e.Exports = +e.Exports;
-//     });
-
-//     // These pairs will be used to generate sections of undefined values
-//     for (var i = 0; i < criticalValues.length; i++) {
-//         if (criticalValues[i].critical && i % 2 === 0) {
-//             criticalPairs.push([criticalValues[i], criticalValues[i + 1]]);
-//         }
-//     }
-//     return criticalPairs;
-// };
-
-
-
+//load data
 d3.csv("playfair_nums_est.csv", function(error, data){
+
 	if (error) throw error;
 
+	//ensures data is in number format 
 	data.forEach(function(d){
-		d.Imports= +d.Imports; //ensures data is in number format 
+		d.Imports= +d.Imports; 
 		d.Exports= +d.Exports;
+		d.Years= +d.Years;
 	});
+
 
 	//calculate values to determine y domain 
 	var maxImport = d3.max(data, function(d) {return d.Imports} );
@@ -118,17 +125,25 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 	var minImport = d3.min(data, function(d) {return d.Imports} );
 	var minExport = d3.min(data, function(d) {return d.Exports} );
 
-	var firstYr = d3.min(data, function(d) {return d.Years});
-	var lastYr = d3.max(data, function(d) {return d.Years});
+	var firstYr = new Date(d3.min(data, function(d) {return d.Years}),0,1);
+	var lastYr = new Date(d3.max(data, function(d) {return d.Years}),0,1);
 
+	console.log("firstYr: " + firstYr +", lastYr: " + lastYr);
 	var maxY = Math.max(maxImport, maxExport);
 
+	//add 1 million to maxY to match original graph
+	maxY = maxY + 1000000;
 
-	//extent is the equivalent of calling min and max simultaneously 
+	//sets the years as the x domain, extent is the equivalent of calling min and max simultaneously 
 	x.domain(d3.extent(data, function(d) { return (d.Years);}));
 
-	//pick y domain based on smallest and largest number of combined import and export numbers + interval for more space 
-	y.domain([0, maxY+interval]);
+	//sets the domain for the x axis labels 
+	xLabel.domain([firstYr, lastYr]);
+
+	//pick y domain based on smallest and largest number of combined import and export numbers
+	//+interval to add an extra interval to match original graph 
+	// /2 because of spacing quirk at the top of the chart
+	y.domain([0, maxY+interval/2]);
 
 
 	//returns y-axis tickmark labels formatted correctly
@@ -137,8 +152,9 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 			return ("1 Million");
 		}else if((tickVal/1000000)%1 === 0){ //if the value is not 1, add an s
 			return (tickVal/1000000 + " Millions");
-		}else if (tickVal === 200000){ //first number on y-axis...might need to change to adapt for other data 
-			return tickVal.toLocaleString(); //adds the comma back into the number, for some reason comes in with comma but returns without 
+		}else if (tickVal === 200000){ //first number on y-axis w/ comma
+			return ("200,000");
+			// return tickVal.toLocaleString(); //adds the comma back into the number, for some reason comes in with comma but returns without 
 		}else if(tickVal < 1000000){ //less than 1 million but not the first y-value
 			return tickVal/100000;
 		}else{ //return the decimal numbers 
@@ -156,34 +172,12 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 		return yNums;
 	}
 
-	//TODO?
-	var tickFormatterX = function(tickVal){
-		// var format = d3.time.format("%y");
-		// format.parse(tickVal);
-		// format(new Date(tickVal));
-
-		// d3.time.format("d");
-		// var tempYr = firstYr;
-		// var xNums[];
-		// for(var i=tempYr; i <=lastYr; i+=1){
-		// 	xNums.push[i];
-		// }
-		// return xNums;
-		// var xNums = [];
-		// for(var i=firstYr; i<= lastYr; i+=1){
-		// 	xNums.push(tickVal.toString().substring(2,2));
-
-		// }
-		// return xNums;
-	}
-
 	//x-axis
 	var xAxis = d3.svg.axis()
-		.scale(x)
+		.scale(xLabel) //use xLabel for the x axis labels
 		.innerTickSize(-height) //background grid, vertical lines 
 		.outerTickSize([0])
-		// .tickFormat(tickFormatterX)
-		.tickFormat(d3.format("d")) //removes comma from year 
+		.tickFormat(customTimeFormat)
 		.orient("bottom");
 
 	//y-axis
@@ -209,14 +203,14 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 
 	//exports line - pink
 	var line2 = d3.svg.area()
-		.interpolate("basis") //makes the line curvy 
-		.defined(function(d) { return d.Exports; }) //limits this line to defined data 
+		.interpolate("basis") 
+		.defined(function(d) { return d.Exports; }) 
 		.x(function(d) {return x(d.Years); }) 
 		.y(function(d) {return y(d.Exports); });
 
 	var area = d3.svg.area()
-		.interpolate("basis") //makes the line curvy
-		.defined(function(d) { return d.Imports; }) //limits this area to defined area 
+		.interpolate("basis") 
+		.defined(function(d) { return d.Imports; }) 
 		.x(function(d) { return x(d.Years)})
 		.y1(function(d) { return y(d.Imports)}); //y1 makes the Imports line the baseline
 
@@ -227,14 +221,14 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 	/****LINE AND AREA FOR UNDEFINED DATA****/
 
 	//imports line - dashed yellow
-    var lineUndefined = d3.svg.line()
+    var lineUndefined = d3.svg.line() //was d3.svg.line()
     	.interpolate("basis") //makes the line curvy
-        .defined(function(d) { console.log(d.critical); return d.critical; }) //returns the data to make the undefined, dashed line
+        .defined(function(d) { return d.critical; }) //returns the data to make the undefined, dashed line
         .x(function(d) { return x(d.Years); })
         .y(function(d) { return y(d.Imports); });
 
     //exports line - dashed pink
-    var lineUndefined2 = d3.svg.line()
+    var lineUndefined2 = d3.svg.line() //was d3.svg.line()
     	.interpolate("basis") //makes the line curvy
         .defined(function(d) { return d.critical; })
         .x(function(d) { return x(d.Years); })
@@ -242,9 +236,9 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 
 	 var areaUndefined = d3.svg.area()
 	 	.interpolate("basis") //makes the line curvy
-        .defined(function(d) { return d.critical; }) //returns the critical data to limit to undefined area 
-        .x(function(d) { return x(d.Years); }) //years are only the critical years
-        .y1(function(d) {return y(d.Imports)}); //y1 makes the Imports line the baseline, these imports are only the critical point imports
+        .defined(function(d) { return d.critical; }) 
+        .x(function(d) { return x(d.Years); }) 
+        .y1(function(d) {return y(d.Imports)}); 
 
 
 	/*************************append all of the graphics to the canvas**************************************/
@@ -277,7 +271,7 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 	svg.append("path")
 		.attr("class", "area above")
 		.attr("clip-path", "url(#clip-above)")
-		.attr("d", area.y0(function(d) { return y(d.Exports); }));
+		.attr("d", area.y0(function(d) { console.log(d.Exports); return y(d.Exports); }));
 
 	svg.append("path")
 		.attr("class", "area below")
@@ -286,11 +280,16 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 
 	/**END DIFFERENCE GRAPH**/
 
-
-
   	//imports
     var criticalPairs = findCriticalPairs(data);
-    _.each(criticalPairs, function(e) {
+    _.each(criticalPairs, function(e) { //e are the critical pairs, 9 arrays of 2 items (the pairs) each
+ 		console.log(e);
+ 		console.log(e[0]);
+ 		console.log(e[1]);
+ 		console.log(e[0].Exports, e[1].Exports);
+
+
+
 		//clip path area above imports line
 		svg.append("clipPath")
 			.attr("id", "clip-above")
@@ -305,38 +304,34 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 
 		//shape that represents area between the two lines ... fills where the two intersect 
 		svg.append("path")
-			// .attr("class", "area above")
-			.classed("area above", true)
-			.attr("clip-path", "url(#clip-above)")
+			.attr("class", "area above")
+			.attr("clip-path", "url(#clip-above)") 
 			.attr("d", areaUndefined.y0(function(d) { return y(d.Exports); }));
-        	// .attr("class", "area area-undefined") //or "area above"
-         //    .attr("d", areaUndefined(e));
 
-        //same for the area below
+
+        // same for the area below
 		svg.append("path")
-			// .attr("class", "area below")
-			.classed("area below", true)
-			.attr("clip-path", "url(#clip-below)")
-			.attr("d", areaUndefined.y0(function(d) { return y(d.Exports); }));
-        	// .attr("class", "area area-undefined") //or "area above"
-	        // .attr("d", areaUndefined(e));
+			.attr("class", "area below")
 
-	    //actually fills in the difference chart
+			.attr("clip-path", "url(#clip-below)") 
+			.attr("d", areaUndefined.y0(function(d) { return y(d.Exports); }));
+
+	    //fills in the difference chart
         svg.append("path")
-        	.attr("class", "area area-undefined") //or "area above"
-            .attr("d", areaUndefined(e)); //area(e) does the same thing
+        	.attr("class", "area area-undefined")
+            .attr("d", areaUndefined(e)); 
+
 
         //dash undefined line for imports
         svg.append("path")
             .attr("class", "line line-undefined")
-            .attr("d", lineUndefined(e)); //line(e) does NOT do the same thing
+            .attr("d", lineUndefined(e)); 
 
         //dash undefined line for exports 
         svg.append("path")
             .attr("class", "exports line-undefined")
             .attr("d", lineUndefined2(e));
     });
-	console.log(criticalPairs);
 
 	//line imports
 	svg.append("path")
@@ -403,9 +398,11 @@ d3.csv("playfair_nums_est.csv", function(error, data){
 	  	.attr("fill", "transparent")
 	  	.attr("stroke", "black")
 	  	.attr("stroke-width", 2);
+
+
  	
 //)******************************************CREATE GRAPH LABEL - borrowed from former student*******//
-var ellipseX=((width*3)/10);
+var ellipseX=(width-775);
 	var ellipseY=150;
 	var textX=((width*2)/15);
 	var textY=110;
@@ -438,7 +435,7 @@ var ellipseX=((width*3)/10);
 			.attr("id", "currValue")
 			.attr("class", "titleText2")
 			.attr("x", textX+60)
-			.attr("y", textY+40) //adjusts vertical space between text liens
+			.attr("y", textY+40) //adjusts vertical space between text lines
 			.text("to and from all");
 	svg.append("g")
 			.attr("id", "currValue")
@@ -452,19 +449,45 @@ var ellipseX=((width*3)/10);
 
 	// add line labels
 	svg.append("text")
-		.attr("transform", "translate(" + (width-320) + "," + (height-250) + ") rotate(" + (-75) + ")")
+		.attr("transform", "translate(" + (width-420) + "," + (height-250) + ") rotate(" + (-70) + ")")
 		.attr("dy", ".35em")
 		.attr("text-anchor","start")
 		.style("fill", "black")
+		.style("font-size", "120%")
 		.text("Line of Exports");
 	svg.append("text")
-		.attr("transform", "translate(" + (width-690) + "," + (height-55) + ") rotate(" + (-11) + ")")
+		.attr("transform", "translate(" + (width-750) + "," + (height-20) + ") rotate(" + (-10) + ")")
 		.attr("dy", ".35em")
 		.attr("text-anchor","start")
 		.style("fill", "black")
+		.style("font-size", "120%")
+		.text("Exports");
+	svg.append("text")
+		.attr("transform", "translate(" + (width-350) + "," + (height-120) + ") rotate(" + (-5) + ")")
+		.attr("dy", ".35em")
+		.attr("text-anchor","start")
+		.style("fill", "black")
+		.style("font-size", "120%")
+		.text("Imports");
+	svg.append("text")
+		.attr("transform", "translate(" + (width-940) + "," + (height-55) + ") rotate(" + (-11) + ")")
+		.attr("dy", ".35em")
+		.attr("text-anchor","start")
+		.style("fill", "black")
+		.style("font-size", "120%")
 		.text("Line of Imports");
-
-
+	svg.append("text")
+		.attr("transform", "translate(" + (width-150) + "," + (height-150) + ") rotate(" + (-65) + ")")
+		.attr("dy", ".35em")
+		.attr("text-anchor","start")
+		.style("fill", "black")
+		.text("BALANCE in FAVOUR of ENGLAND");
+	svg.append("text")
+		.attr("transform", "translate(" + (width-400) + "," + (height-150) + ") rotate(" + (-65) + ")")
+		.attr("dy", ".35em")
+		.attr("text-anchor","start")
+		.style("fill", "black")
+		.text("BALANCE in FAVOUR of ENGLAND");
 });
 
 

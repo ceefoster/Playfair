@@ -99,7 +99,7 @@ body {
 }
 
 .area-undefined{
-  fill:gray;
+  fill: gray;
 /*  stroke:black;
   stroke-width: .5px;*/
 }
@@ -114,6 +114,7 @@ body {
 }
 /**/
 
+/*font style for oval chart label*/
 .titleText{
 	font-size: x-large;
 	font-family: 'maranalloregular' ;
